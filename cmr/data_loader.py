@@ -1,7 +1,8 @@
 import pathlib
 
 import pandas as pd
-from joblib import Parallel, delayed
+import ta
+import ta.utils
 
 from .cache import MEMORY
 
@@ -20,6 +21,7 @@ def load_symbols(pattern: str = "*usd"):
     return symbols
 
 
+@MEMORY.cache
 def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
     """
 
@@ -47,11 +49,14 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
         'low': 'min',
         'close': 'last',
         'volume': 'sum'
-    })
+    }).ffill()  # volume will be filled as 0 in agg(), ffill only applies for other fields
+
+    # Add all ta features filling nans values
+    if df.empty or len(df) < 30:
+        return pd.DataFrame()
+    df = ta.add_all_ta_features(df, "open", "high", "low", "close", "volume", fillna=True)
 
     # Add symbol
     df['symbol'] = symbol
 
     return df.set_index('symbol', append=True).reset_index()
-
-

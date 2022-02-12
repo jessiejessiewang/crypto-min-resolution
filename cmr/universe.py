@@ -6,7 +6,7 @@ from .data_loader import load_data, load_symbols
 
 
 @MEMORY.cache
-def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10e6):
+def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 1e6):
     """
 
     :param start: start timestamp
@@ -19,6 +19,7 @@ def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10
 
     # Load data
     dfs = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start, end))(s) for s in symbols)
+    # dfs = [load_data(s, start, end) for s in symbols]
     df = pd.concat(dfs).sort_values(['time', 'symbol'])
 
     # Add additional columns
