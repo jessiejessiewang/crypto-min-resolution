@@ -27,7 +27,7 @@ def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10
     df['adv30'] = df.groupby(['symbol']).value_traded.transform(lambda x: x.rolling(10, 1).mean())
 
     # Filter based on adv limit
-    valid_symbols = df[df.adv_30d > adv_limit].symbol.unique()
+    valid_symbols = df[df.adv30 > adv_limit].symbol.unique()
     df = df[df.symbol.isin(valid_symbols)]
 
     # Drop low quality data
