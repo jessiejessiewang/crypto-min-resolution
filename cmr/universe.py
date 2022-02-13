@@ -19,12 +19,12 @@ def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10
     symbols = load_symbols("*usd")
 
     # Load data
-    dfs = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
-    df = pd.concat(dfs).sort_values(['time', 'symbol'])
+    df = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
+    df = pd.concat(df).sort_values(['time', 'symbol'])
 
     # Add additional columns
     df['value_traded'] = df.close * df.volume
-    df['adv_30d'] = df.groupby(['symbol']).value_traded.transform(lambda x: x.rolling(10, 1).mean())
+    df['adv30'] = df.groupby(['symbol']).value_traded.transform(lambda x: x.rolling(10, 1).mean())
 
     # Filter based on adv limit
     valid_symbols = df[df.adv_30d > adv_limit].symbol.unique()
