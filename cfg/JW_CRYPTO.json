@@ -3,7 +3,7 @@
   "adv_limit": 10e6,
   "symbol_pattern": "*usd",
   "opt_kwargs": {
-    "lambda_risk": 5.0,
+    "lambda_risk": 200.0,
     "leverage_limit": 1,
     "max_weights": 0.10,
     "min_weights": -0.10,

@@ -65,7 +65,7 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
 
 
 @MEMORY.cache
-def load_market_data(symbols: [str], start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame:
+def load_market_data(symbols: [str], start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """
 
     :param symbols: list of symbols
