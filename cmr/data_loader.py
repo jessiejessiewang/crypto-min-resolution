@@ -79,7 +79,7 @@ def load_features(symbols: [str], start: pd.Timestamp, end: pd.Timestamp) -> pd.
     df = pd.concat(df).set_index(['time', 'symbol'])
 
     # Drop non-features columns
-    df = df.drop(columns=['open', 'high', 'low', 'close', 'ret'])
+    df = df.drop(columns=['open', 'high', 'low', 'close', 'volume', 'ret'])
 
     # Drop low quality data
     df = df.drop(columns=['trend_psar_down', 'trend_psar_up']).dropna()
