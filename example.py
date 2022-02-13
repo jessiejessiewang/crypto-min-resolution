@@ -5,6 +5,8 @@ import sys
 import pandas as pd
 import cvxportfolio as cp
 from cmr.data_loader import load_ret
+from cmr.returns import TaReturnsForecast
+from cmr.risk import ReturnsCovRiskModel
 from cmr.universe import build_universe
 from cmr.strategy import CryptoStatArb
 
@@ -22,10 +24,19 @@ if __name__ == '__main__':
     # build universe
     symbols = build_universe(cfg['symbol_pattern'], start, end, adv_limit=cfg['adv_limit'])
 
-    # build strategy
-    optimizer = CryptoStatArb(symbols, start, end, **cfg['opt_kwargs'])
-    signals = optimizer.return_forecast.returns
+    # build predictions
+    return_forecast = TaReturnsForecast(symbols, start, end)
+    signals = return_forecast.returns
     print(signals)
+
+    # build costs
+    risk_model = ReturnsCovRiskModel(symbols, start, end).get_value()
+    tcost_model = cp.TcostModel(half_spread=cfg['half_spread'])  # different by market, or even more complex by ticker
+    # bcost_model = cp.HcostModel(borrow_costs=borrow_costs / 250)  # borrow costs by ticker can be read from broker
+    costs = [cfg['lambda_risk'] * cp.FullSigma(risk_model), tcost_model]  # fit into cp format
+
+    # build strategy
+    optimizer = CryptoStatArb(return_forecast, costs, **cfg['opt_kwargs'])
 
     # back-test
     returns = load_ret(symbols, start, end).fillna(0)

@@ -19,10 +19,12 @@ class TaReturnsForecast(cvx.ReturnsForecast):
         :param start: start timestamp
         :param end: end timestamp
         """
+
         self.symbols = symbols
         self.start = start
         self.end = end
-        super().__init__(self.get_value())
+        self.fit_model()
+        super().__init__(self.get_prediction())
 
     @lazy
     def alpha_source(self):
@@ -43,7 +45,22 @@ class TaReturnsForecast(cvx.ReturnsForecast):
             linear_model.LinearRegression()
         )
 
-    def get_value(self):
+    def fit_model(self):
+        logging.info("built signals from %s to %s" % (self.start, self.end))
+
+        # shift y
+        af = self.alpha_source
+        af['ret1d'] = af.groupby('symbol')['ret'].shift(-1).fillna(0)
+
+        # split train and test
+        x = af.drop(columns=['ret1d'])
+        y = af['ret1d'] - af.ret.groupby(level=0).transform(lambda x_: x_.mean())
+        x_train = x.loc[x.index.get_level_values(0) < self.test_start]
+        y_train = y.loc[y.index.get_level_values(0) < self.test_start]
+
+        self.model.fit(x_train, y_train)
+
+    def get_prediction(self):
         """
         Get signal value
         """
@@ -51,18 +68,14 @@ class TaReturnsForecast(cvx.ReturnsForecast):
 
         # shift y
         af = self.alpha_source
-        af['ret'] = af.groupby('symbol')['ret'].shift(-1).fillna(0)
+        af['ret1d'] = af.groupby('symbol')['ret'].shift(-1).fillna(0)
 
         # split train and test
-        x = self.alpha_source.drop(columns=['ret'])
-        y = self.alpha_source['ret'] - self.alpha_source.ret.groupby(level=0).transform(lambda x_: x_.mean())
-        x_train = x.loc[x.index.get_level_values(0) < self.test_start]
-        y_train = y.loc[y.index.get_level_values(0) < self.test_start]
+        x = af.drop(columns=['ret1d'])
         x_test = x.loc[(x.index.get_level_values(0) >= self.test_start) & (x.index.get_level_values(0) < self.test_end)]
-
-        self.model.fit(x_train, y_train)
-        predictions = pd.Series(index=x_test.index, data=self.model.predict(x_test)).unstack().shift(1).fillna(0)
+        # FIXME: fill zero is too brute-force
+        self.returns = pd.Series(index=x_test.index, data=self.model.predict(x_test)).unstack().shift(1).fillna(0)
 
         # construct outputs
-        predictions['cash'] = 0
-        return predictions  # FIXME: fill zero is too brute-force
+        self.returns['cash'] = 0
+        return self.returns
