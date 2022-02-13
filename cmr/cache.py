@@ -1,3 +1,3 @@
 import joblib
 
-MEMORY = joblib.Memory(verbose=0)
+MEMORY = joblib.Memory(location="~/.cache", verbose=0)
