@@ -51,7 +51,6 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
         'volume': 'sum'
     }).ffill()  # volume will be filled as 0 in agg(), ffill only applies for other fields
     df['ret'] = df.close.pct_change()
-    df['ret_fwd1'] = df.ret.shift(-1)
 
     # Add all ta features filling nans values
     if df.empty or len(df) < 30:
@@ -79,7 +78,7 @@ def load_features(symbols: [str], start: pd.Timestamp, end: pd.Timestamp) -> pd.
     df = pd.concat(df).set_index(['time', 'symbol'])
 
     # Drop non-features columns
-    df = df.drop(columns=['open', 'high', 'low', 'close', 'volume', 'ret'])
+    df = df.drop(columns=['open', 'high', 'low', 'close', 'volume'])
 
     # Drop low quality data
     df = df.drop(columns=['trend_psar_down', 'trend_psar_up']).dropna()
