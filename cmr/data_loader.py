@@ -3,10 +3,10 @@ import pathlib
 import pandas as pd
 import ta
 import ta.utils
+from dateutil.relativedelta import relativedelta
+from joblib import Parallel, delayed
 
 from .cache import MEMORY
-
-__all__ = ['load_symbols', 'load_data']
 
 INPUT_PATH = pathlib.Path(__file__).parent.absolute().joinpath("../input")  # TODO： should be in config file formally
 
@@ -63,3 +63,59 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
     df['symbol'] = symbol
 
     return df.set_index('symbol', append=True).reset_index()
+
+
+@MEMORY.cache
+def load_features(symbols: [str], start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    """
+
+    :param symbols: list of symbols
+    :param start: start timestamp
+    :param end: end timestamp
+    :return: features dataframe
+    """
+    # Load data
+    df = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
+    df = pd.concat(df).set_index(['time', 'symbol'])
+
+    # Drop non-features columns
+    df = df.drop(columns=['open', 'high', 'low', 'close', 'ret'])
+
+    # Drop low quality data
+    df = df.drop(columns=['trend_psar_down', 'trend_psar_up']).dropna()
+
+    return df[(df.index.get_level_values(0) >= start) & (df.index.get_level_values(0) <= end)]
+
+
+@MEMORY.cache
+def load_ret(symbols: [str], start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    """
+
+    :param symbols: list of symbols
+    :param start: start timestamp
+    :param end: end timestamp
+    :return: returns dataframe
+    """
+    df = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
+    df = pd.concat(df).pivot(index='time', columns='symbol', values='ret').fillna(0)
+    df['cash'] = 0
+    return df[(df.index >= start) & (df.index <= end)]
+
+
+@MEMORY.cache
+def load_cov(symbols: [str], start: pd.Timestamp, end: pd.Timestamp, window: int = 180) -> pd.DataFrame:
+    """
+
+    :param symbols: list of symbols
+    :param start: start timestamp
+    :param end: end timestamp
+    :param window: covariance window
+    :return:
+    """
+    df = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
+    df = pd.concat(df).pivot(index='time', columns='symbol', values='ret').fillna(0)
+    df['cash'] = 0
+
+    # Risk model in practice
+    df = df.rolling(window=window, min_periods=window).cov().dropna()
+    return df[(df.index.get_level_values(0) >= start) & (df.index.get_level_values(0) <= end)]

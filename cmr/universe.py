@@ -7,16 +7,17 @@ from .data_loader import load_data, load_symbols
 
 
 @MEMORY.cache
-def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10e6):
+def build_universe(symbol_pattern: str, start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10e6):
     """
 
+    :param symbol_pattern: symbol pattern in regex
     :param start: start timestamp
     :param end: end timestamp
     :param adv_limit:
-    :return:
+    :return: list of symbols
     """
     # Load symbols
-    symbols = load_symbols("*usd")
+    symbols = load_symbols(symbol_pattern)
 
     # Load data
     df = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
@@ -28,9 +29,4 @@ def build_universe(start: pd.Timestamp, end: pd.Timestamp, adv_limit: float = 10
 
     # Filter based on adv limit
     valid_symbols = df[df.adv30 > adv_limit].symbol.unique()
-    df = df[df.symbol.isin(valid_symbols)]
-
-    # Drop low quality data
-    df = df.drop(columns=['trend_psar_down', 'trend_psar_up']).dropna()
-
-    return df[(df.time >= start) & (df.time <= end)]
+    return valid_symbols
