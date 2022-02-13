@@ -50,11 +50,13 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
         'close': 'last',
         'volume': 'sum'
     }).ffill()  # volume will be filled as 0 in agg(), ffill only applies for other fields
+    df['return'] = df.close.pct_change()
 
     # Add all ta features filling nans values
     if df.empty or len(df) < 30:
         return pd.DataFrame()
-    df = ta.add_all_ta_features(df, "open", "high", "low", "close", "volume", fillna=True)
+    df = ta.add_all_ta_features(df, "open", "high", "low", "close", "volume")
+    df = df.dropna(axis=1, how='all')
 
     # Add symbol
     df['symbol'] = symbol
