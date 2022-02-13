@@ -65,6 +65,22 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
 
 
 @MEMORY.cache
+def load_market_data(symbols: [str], start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame:
+    """
+
+    :param symbols: list of symbols
+    :param start: start timestamp
+    :param end: end timestamp
+    :return:
+    """
+    # Load data
+    df = Parallel(n_jobs=8)(delayed(lambda s: load_data(s, start - relativedelta(months=6), end))(s) for s in symbols)
+    df = pd.concat(df).set_index(['time', 'symbol'])
+    df = df[['open', 'high', 'low', 'close', 'volume']]
+    return df[(df.index.get_level_values(0) >= start) & (df.index.get_level_values(0) <= end)]
+
+
+@MEMORY.cache
 def load_features(symbols: [str], start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """
 
