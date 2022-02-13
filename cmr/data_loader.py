@@ -50,7 +50,8 @@ def load_data(symbol: str, start: pd.Timestamp, end: pd.Timestamp):
         'close': 'last',
         'volume': 'sum'
     }).ffill()  # volume will be filled as 0 in agg(), ffill only applies for other fields
-    df['return'] = df.close.pct_change()
+    df['ret'] = df.close.pct_change()
+    df['ret_fwd1d'] = df.ret.shift(-1)
 
     # Add all ta features filling nans values
     if df.empty or len(df) < 30:
