@@ -29,4 +29,4 @@ def build_universe(symbol_pattern: str, start: pd.Timestamp, end: pd.Timestamp, 
 
     # Filter based on adv limit
     valid_symbols = df[df.adv30 > adv_limit].symbol.unique()
-    return valid_symbols
+    return sorted(valid_symbols)

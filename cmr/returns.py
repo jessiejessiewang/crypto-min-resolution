@@ -71,7 +71,7 @@ class TaReturnsForecast(cvx.ReturnsForecast):
         logging.info("built signals from %s to %s" % (self.start, self.end))
 
         # shift y
-        af = self.alpha_source
+        af = self.alpha_source.copy()
         af['ret1d'] = af.groupby('symbol')['ret'].shift(-1).fillna(0)
 
         # split train and test
