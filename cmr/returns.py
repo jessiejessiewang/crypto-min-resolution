@@ -2,33 +2,37 @@ import logging
 
 import cvxportfolio as cvx
 import pandas as pd
+import sklearn.impute as impute
 import sklearn.linear_model as linear_model
+import sklearn.metrics as metrics
 import sklearn.preprocessing as pre
 from lazy import lazy
 from sklearn.pipeline import make_pipeline
-import sklearn.metrics as metrics
+
 from .data_loader import load_features
 
 
 class TaReturnsForecast(cvx.ReturnsForecast):
 
-    def __init__(self, symbols: list, start: pd.Timestamp, end: pd.Timestamp) -> None:
+    def __init__(self, symbols: list, start: pd.Timestamp, end: pd.Timestamp, resample_rule: str = '1H') -> None:
         """
 
         :param symbols: universe
         :param start: start timestamp
         :param end: end timestamp
+        :param resample_rule：frequency
         """
 
         self.symbols = symbols
         self.start = start
         self.end = end
+        self.resample_rule = resample_rule
         self.fit_model()
         super().__init__(self.get_prediction())
 
     @lazy
     def alpha_source(self):
-        return load_features(self.symbols, self.start, self.end)
+        return load_features(self.symbols, self.start, self.end, self.resample_rule)
 
     @lazy
     def test_start(self):
@@ -41,6 +45,7 @@ class TaReturnsForecast(cvx.ReturnsForecast):
     @lazy
     def model(self):
         return make_pipeline(
+            impute.SimpleImputer(),
             pre.RobustScaler(with_centering=False),
             linear_model.LinearRegression()
         )
@@ -54,9 +59,9 @@ class TaReturnsForecast(cvx.ReturnsForecast):
 
         # split train and test
         x = af.drop(columns=['ret1d'])
-        y = af['ret1d'] - af.ret.groupby(level=0).transform(lambda x_: x_.mean())
-        x_train = x.loc[x.index.get_level_values(0) < self.test_start]
-        y_train = y.loc[y.index.get_level_values(0) < self.test_start]
+        y = af['ret1d']
+        x_train = x  # x.loc[(x.index.get_level_values(0) < self.test_start)]
+        y_train = y  # y.loc[(y.index.get_level_values(0) < self.test_start)]
         self.model.fit(x_train, y_train)
 
         # print out in-sample evaluation

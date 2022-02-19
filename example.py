@@ -22,25 +22,25 @@ if __name__ == '__main__':
     end = pd.Timestamp(2022, 1, 30)
 
     # build universe
-    symbols = build_universe(cfg['symbol_pattern'], start, end, adv_limit=cfg['adv_limit'])
+    symbols = build_universe(cfg['symbol_pattern'], start, end, cfg['adv_limit'], cfg['resample_rule'])
 
     # build predictions
-    return_forecast = TaReturnsForecast(symbols, start, end)
-    signals = return_forecast.returns
+    rf = TaReturnsForecast(symbols, start, end)
+    signals = rf.returns
     print(signals)
 
     # build costs
-    risk_model = ReturnsCovRiskModel(symbols, start, end).get_value()
-    tcost_model = cp.TcostModel(half_spread=cfg['half_spread'])  # different by market, or even more complex by ticker
+    risk_model = ReturnsCovRiskModel(rf.returns.columns[:-1], start, end).get_value()
+    # tcost_model = cp.TcostModel(half_spread=cfg['half_spread'])  # different by market, or even more complex by ticker
     # bcost_model = cp.HcostModel(borrow_costs=borrow_costs / 250)  # borrow costs by ticker can be read from broker
-    costs = [cfg['lambda_risk'] * cp.FullSigma(risk_model), tcost_model]  # fit into cp format
+    costs = [cfg['lambda_risk'] * cp.FullSigma(risk_model)]  # fit into cp format
 
     # build strategy
-    optimizer = CryptoStatArb(return_forecast, costs, **cfg['opt_kwargs'])
+    optimizer = CryptoStatArb(rf, costs, **cfg['opt_kwargs'])
 
     # back-test
-    returns = load_ret(symbols, start, end).fillna(0)
-    market_sim = cp.MarketSimulator(returns, [tcost_model], cash_key='cash')
+    returns = load_ret(rf.returns.columns[:-1], start, end).fillna(0)
+    market_sim = cp.MarketSimulator(returns, [], cash_key='cash')
     initial_portfolio = pd.Series(index=returns.columns, data=0)
     initial_portfolio.loc['cash'] = 10e6
     result = market_sim.run_backtest(initial_portfolio, signals.index[0], signals.index[-1], policy=optimizer)

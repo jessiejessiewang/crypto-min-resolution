@@ -1,13 +1,14 @@
 {
   "portfolio_id": "JW_CRYPTO",
-  "adv_limit": 10e6,
+  "adv_limit": 2e5,
   "symbol_pattern": "*usd",
-  "lambda_risk": 360.0,
+  "lambda_risk": 1.0,
   "half_spread": 0.005,
   "borrow_costs": 0,
   "opt_kwargs": {
     "leverage_limit": 1,
     "max_weights": 0.10,
     "min_weights": -0.10
-  }
+  },
+  "resample_rule": "1H"
 }
