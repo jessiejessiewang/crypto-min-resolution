@@ -30,4 +30,8 @@ def build_universe(symbol_pattern: str, start: pd.Timestamp, end: pd.Timestamp, 
 
     # Filter based on adv limit
     valid_symbols = df[df.adv30 > adv_limit].symbol.unique()
+
+    # Remove symbols with "-", these cryptos have data issues
+    valid_symbols = [x for x in valid_symbols if '-' not in valid_symbols]
+
     return sorted(valid_symbols)
