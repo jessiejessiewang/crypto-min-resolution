@@ -139,8 +139,7 @@ class TaReturnsForecast(object):
     def predict(self):
         # Train the model
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=2, restore_best_weights=True)
-        self.model.fit(self.generator_train_test[0], epochs=7, callbacks=[callback])
-        # self.model.save('universe_%sh_7epoch_tanhDualLSTM.keras' % self.window)
+        self.model.fit(self.generator_train_test[0], epochs=100, callbacks=[callback])  # should take ~10 epochs
 
         # Predict
         train_result = self.generator_train_test[2].copy()
