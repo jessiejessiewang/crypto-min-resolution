@@ -29,7 +29,7 @@ class TaReturnsForecast(object):
 
     @lazy
     def alpha_source(self):
-        feat = load_features(self.symbols, self.start, self.end, self.resample_rule)
+        feat = load_features(self.symbols, self.start, self.end, self.resample_rule).dropna()
         feat = feat.reorder_levels(['time', 'symbol']).sort_index()
         return feat
 
@@ -55,7 +55,7 @@ class TaReturnsForecast(object):
 
     @lazy
     def is_pca(self):
-        return False
+        return True
 
     @lazy
     def scaled_train_test(self):
@@ -136,7 +136,7 @@ class TaReturnsForecast(object):
         model.compile(optimizer='adam', loss='mean_absolute_error', metrics=['MSE', 'MAE'])
         return model
 
-    def fit_model(self):
+    def predict(self):
         # Train the model
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=2, restore_best_weights=True)
         self.model.fit(self.generator_train_test[0], epochs=7, callbacks=[callback])
