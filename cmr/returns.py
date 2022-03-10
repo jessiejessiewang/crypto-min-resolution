@@ -55,7 +55,7 @@ class TaReturnsForecast(object):
 
     @lazy
     def is_pca(self):
-        return True
+        return False
 
     @lazy
     def scaled_train_test(self):
@@ -80,6 +80,7 @@ class TaReturnsForecast(object):
         test = pd.concat([scaled_test, dummy_test], axis=1)
 
         # features PCA, from 85 features (to 21 features)
+        # Turned off for network models (non linear), don't want to compress feature using a linear rule
         if self.is_pca:
             pca_scaler = PCA(n_components=0.90)
             train = pd.DataFrame(index=train.index, data=pca_scaler.fit_transform(train))
@@ -117,8 +118,8 @@ class TaReturnsForecast(object):
             train_index = train_index.append(y_train)
             test_index = test_index.append(y_test)
 
-        generator_train = generator_train.batch(128)
-        generator_test = generator_test.batch(128)
+        generator_train = generator_train.shuffle(buffer_size=len(train_index)).batch(128)
+        generator_test = generator_test.shuffle(buffer_size=len(test_index)).batch(128)
 
         return generator_train, generator_test, train_index, test_index
 
