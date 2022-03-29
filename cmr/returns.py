@@ -55,7 +55,7 @@ class TaReturnsForecast(object):
 
     @lazy
     def is_pca(self):
-        return False
+        return True
 
     @lazy
     def scaled_train_test(self):
@@ -118,8 +118,8 @@ class TaReturnsForecast(object):
             train_index = train_index.append(y_train)
             test_index = test_index.append(y_test)
 
-        generator_train = generator_train.shuffle(buffer_size=len(train_index)).batch(128)
-        generator_test = generator_test.shuffle(buffer_size=len(test_index)).batch(128)
+        generator_train = generator_train.batch(128)
+        generator_test = generator_test.batch(128)
 
         return generator_train, generator_test, train_index, test_index
 
@@ -140,7 +140,7 @@ class TaReturnsForecast(object):
     def predict(self):
         # Train the model
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=2, restore_best_weights=True)
-        self.model.fit(self.generator_train_test[0], epochs=100, callbacks=[callback])  # should take ~10 epochs
+        self.model.fit(self.generator_train_test[0], epochs=7, callbacks=[callback])  # should take ~10 epochs
 
         # Predict
         train_result = self.generator_train_test[2].copy()
